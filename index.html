@@ -257,18 +257,18 @@ html,body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px
     </div>
     <div id="ocr-area" class="hidden">
       <div id="upload-area">
-        <div class="upload-a" onclick="document.getElementById('img-file').click()">
+        <label for="img-file" class="upload-a" style="display:block">
           <span class="uicon">📷</span>
           <p>📸 拍照上传</p>
           <p style="font-size:11px;color:var(--text3);margin-top:4px">iPad/Safari可直接拍照</p>
-        </div>
+        </label>
+        <input type="file" id="img-file" accept="image/*" capture="environment" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none" onchange="handleImg(this)">
         <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn btn-s" style="flex:1" onclick="document.getElementById('img-file').click()">📷 拍照</button>
-          <button class="btn btn-s" style="flex:1" onclick="document.getElementById('img-gallery').click()">🖼️ 相册</button>
+          <label for="img-gallery" class="btn btn-s" style="flex:1;text-align:center;pointer-events:auto">🖼️ 从相册选择</label>
+          <label for="img-file" class="btn btn-s" style="flex:1;text-align:center;pointer-events:auto">📷 拍照</label>
         </div>
+        <input type="file" id="img-gallery" accept="image/*" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none" onchange="handleImg(this)">
       </div>
-      <input type="file" id="img-file" accept="image/*" capture="environment" style="display:none" onchange="handleImg(this)">
-      <input type="file" id="img-gallery" accept="image/*" style="display:none" onchange="handleImg(this)">
     </div>
     <div class="fg">
       <label>题目内容 *</label>
