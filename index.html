@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>错题宝 - 错题收集整理及举一反三</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--primary:#4F46E5;--primary-light:#818CF8;--success:#10B981;--warning:#F59E0B;--danger:#EF4444;--bg:#F5F5F5;--white:#FFFFFF;--text:#1F2937;--text2:#6B7280;--text3:#9CA3AF;--border:#E5E7EB;--shadow:0 2px 8px rgba(0,0,0,.1);--safe:env(safe-area-inset-bottom,0px)}
+html,body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;color:var(--text);background:var(--bg);overflow-x:hidden}
+#app{min-height:100vh;max-width:100vw}
+.pages{height:calc(100vh - 60px - var(--safe));overflow-y:auto;padding-bottom:20px}
+.page{display:none;animation:fadeIn .3s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.tab-bar{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;background:var(--white);border-top:1px solid var(--border);padding:8px 0;padding-bottom:calc(8px + var(--safe));z-index:100}
+.tab-item{display:flex;flex-direction:column;align-items:center;padding:4px 12px;cursor:pointer;transition:.2s}
+.tab-item.active{color:var(--primary)}
+.tab-icon{font-size:20px;margin-bottom:2px}
+.tab-text{font-size:10px}
+.header{text-align:center;padding:24px 16px;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;border-radius:0 0 24px 24px;margin-bottom:16px}
+.header h1{font-size:22px;margin-bottom:4px}
+.header .sub{font-size:12px;opacity:.9}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 16px;margin-bottom:16px}
+.stat-card{background:var(--white);border-radius:12px;padding:12px 8px;text-align:center;box-shadow:var(--shadow)}
+.stat-card .val{font-size:20px;font-weight:700;color:var(--primary)}
+.stat-card .lbl{font-size:10px;color:var(--text2);margin-top:2px}
+.sec{background:var(--white);border-radius:16px;padding:16px;margin:0 16px 16px;box-shadow:var(--shadow)}
+.sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.sec-hdr h2{font-size:16px}.badge{background:var(--primary);color:white;padding:2px 8px;border-radius:10px;font-size:12px}
+.review-item{display:flex;align-items:center;padding:12px;background:var(--bg);border-radius:8px;margin-bottom:8px;cursor:pointer}
+.review-item .subj{padding:2px 6px;background:var(--primary-light);color:white;border-radius:4px;font-size:10px;margin-right:8px;white-space:nowrap}
+.review-item .txt{flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px}
+.review-item .arr{color:var(--text3)}
+.empty{text-align:center;padding:32px 16px;color:var(--text2)}
+.empty .eicon{font-size:48px;display:block;margin-bottom:8px}
+.empty p{margin-bottom:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 20px;border:none;border-radius:8px;font-size:14px;cursor:pointer;transition:.2s;text-decoration:none}
+.btn:active{transform:scale(.96)}
+.btn-p{background:var(--primary);color:white}
+.btn-s{background:var(--bg);color:var(--text)}
+.btn-ai{background:linear-gradient(135deg,#667EEA,#764BA2);color:white;width:100%}
+.btn-b{width:100%}.btn-sm{padding:4px 12px;font-size:12px;background:var(--bg)}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.action-item{display:flex;flex-direction:column;align-items:center;padding:16px 8px;background:var(--bg);border-radius:12px;cursor:pointer;transition:.2s}
+.action-item:active{transform:scale(.95)}
+.action-item .aicon{font-size:24px;margin-bottom:4px}
+.action-item .atxt{font-size:12px;color:var(--text2)}
+/* 列表页 */
+.page-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.page-hdr h1{font-size:18px}
+.search-b{display:flex;gap:8px;flex:1;margin-left:12px}
+.search-b input{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:20px;font-size:13px;background:var(--bg)}
+.filters{display:flex;gap:8px;padding:12px 16px;overflow-x:auto}
+.filter-g select{padding:6px 12px;border:1px solid var(--border);border-radius:16px;font-size:12px;background:var(--white)}
+.qlist{padding:0 16px}
+.qcard{background:var(--white);border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow);cursor:pointer;transition:.2s}
+.qcard:active{transform:scale(.98)}
+.qcard .tags{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.qcard .tag{padding:2px 8px;border-radius:4px;font-size:10px;color:white}
+.tag.math{background:#3B82F6}.tag.chinese{background:#EF4444}.tag.english{background:#10B981}.tag.physics{background:#8B5CF6}.tag.chemistry{background:#F59E0B}.tag.biology{background:#EC4899}.tag.history{background:#6366F1}.tag.geography{background:#14B8A6}.tag.politics{background:#F97316}
+.tag.easy{background:#10B981}.tag.medium{background:#F59E0B}.tag.hard{background:#EF4444}
+.tag.new{background:var(--primary)}.tag.learning{background:var(--warning)}.tag.mastered{background:var(--success)}
+.qcard .q{font-size:14px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.qcard .meta{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text3)}
+/* 添加页 */
+.form{padding:16px}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:14px;color:var(--text2);margin-bottom:6px}
+.fg input[type="text"],.fg textarea,.fg select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--white)}
+.fg textarea{resize:none}.mode-sel{display:flex;gap:8px;margin-bottom:16px}
+.mode-btn{flex:1;padding:12px;border:1px solid var(--border);background:var(--white);border-radius:8px;cursor:pointer;text-align:center;transition:.2s}
+.mode-btn.active{border-color:var(--primary);background:rgba(79,70,229,.1);color:var(--primary);font-weight:600}
+.upload-a{border:2px dashed var(--border);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer}
+.upload-a .uicon{font-size:48px;display:block;margin-bottom:8px}
+.diff-sel{display:flex;gap:8px}.diff-sel label{flex:1;text-align:center;padding:10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:.2s}
+.diff-sel input{display:none}.diff-sel input:checked+label{border-color:var(--primary);background:rgba(79,70,229,.1)}
+.ai-r{margin-top:12px;padding:12px;background:linear-gradient(135deg,rgba(102,126,234,.1),rgba(118,75,162,.1));border-radius:8px;display:none}
+.ai-r h3{font-size:14px;margin-bottom:8px}.ai-r p{margin-bottom:6px;font-size:13px}
+/* 练习页 */
+.modes{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px}
+.mode-c{background:var(--white);border-radius:12px;padding:20px 16px;text-align:center;box-shadow:var(--shadow);cursor:pointer;transition:.2s}
+.mode-c:active{transform:scale(.96)}
+.mode-c.active{border:2px solid var(--primary);background:rgba(79,70,229,.05)}
+.mode-c .micon{font-size:32px;display:block;margin-bottom:8px}
+.mode-c h3{font-size:14px;margin-bottom:4px}.mode-c p{font-size:11px;color:var(--text2)}
+.practice-s{padding:0 16px;margin-bottom:16px}
+.stepper{display:flex;align-items:center;gap:12px;background:var(--white);padding:12px 16px;border-radius:8px}
+.stepper label{flex:1;color:var(--text2)}
+.stepper .step-btn{width:32px;height:32px;border:1px solid var(--border);background:var(--white);border-radius:50%;cursor:pointer;font-size:16px;line-height:32px;text-align:center}
+.stepper input{width:50px;text-align:center;border:none;font-size:16px;font-weight:600;background:transparent}
+.practice-r{padding:16px;background:var(--white);border-radius:12px;margin:16px;display:none}
+.practice-r .progress{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.practice-r .q-meta{display:flex;gap:6px;margin-bottom:8px}
+.practice-r .q-text{font-size:15px;line-height:1.6;margin-bottom:16px}
+.practice-r .ans-btns{display:flex;gap:12px}
+.practice-r .ans-btns .btn{flex:1}
+.practice-r .reveal{display:none;padding:12px;background:var(--bg);border-radius:8px;margin-top:12px}
+.practice-r .reveal h4{font-size:13px;margin-bottom:6px;color:var(--text2)}
+.practice-r .reveal p{font-size:14px;margin-bottom:8px}
+.result-h{text-align:center;margin-bottom:16px}
+.result-h .ricon{font-size:64px}.result-h h3{font-size:18px;margin-top:8px}
+.result-st{display:flex;justify-content:space-around;margin-bottom:16px}
+.result-st .rs{text-align:center}.result-st .rs .v{font-size:24px;font-weight:700;color:var(--primary)}.result-st .rs .l{font-size:12px;color:var(--text2)}
+/* 详情页 */
+.detail{padding:16px}
+.detail .dsec{background:var(--white);border-radius:12px;padding:16px;margin-bottom:16px}
+.detail .dsec h3{font-size:16px;margin-bottom:12px}
+.detail .q-meta{display:flex;gap:6px;margin-bottom:12px}
+.detail .q-text{font-size:16px;line-height:1.6}
+.detail .ans-box{padding:12px;background:var(--bg);border-radius:8px;font-size:14px;line-height:1.6}
+.similar{margin-top:12px}
+.similar .s-item{padding:12px;background:var(--bg);border-radius:8px;margin-bottom:8px}
+.similar .s-item h4{font-size:13px;margin-bottom:6px}
+.similar .s-item p{font-size:12px;margin-bottom:4px}
+.similar .s-item .answer{color:var(--success);font-weight:600}
+.detail .st-row{display:flex;justify-content:space-around}
+.detail .st-row .si{text-align:center}
+.detail .st-row .si .lbl{font-size:11px;color:var(--text2);display:block}
+.detail .st-row .si .val{font-size:20px;font-weight:700;color:var(--primary)}
+.detail .act-btns{display:flex;gap:12px}
+.detail .act-btns .btn{flex:1}
+.detail .back-btn{background:none;border:none;font-size:18px;cursor:pointer}
+.detail .header-acts{display:flex;gap:8px}
+.detail .header-acts button{background:none;border:none;font-size:18px;cursor:pointer}
+/* 个人中心 */
+.user-sec{display:flex;align-items:center;padding:24px 16px;background:var(--white);margin-bottom:16px}
+.user-ava{width:64px;height:64px;background:var(--bg);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;margin-right:16px}
+.user-info h2{font-size:18px;margin-bottom:4px}
+.user-info .uid{font-size:12px;color:var(--text2)}
+.st-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.st-box{background:var(--bg);border-radius:12px;padding:16px;text-align:center}
+.st-box .num{font-size:28px;font-weight:700;color:var(--primary)}
+.st-box .desc{font-size:12px;color:var(--text2);margin-top:4px}
+.week-ch{display:flex;justify-content:space-between;align-items:flex-end;height:100px;padding:16px 0}
+.week-ch .wb{display:flex;flex-direction:column;align-items:center;flex:1}
+.week-ch .wf{width:24px;background:linear-gradient(180deg,var(--primary),var(--primary-light));border-radius:4px 4px 0 0;transition:height .5s ease}
+.week-ch .wl{font-size:11px;color:var(--text2);margin-top:8px}
+.menus{background:var(--white);border-radius:12px;margin:0 16px 16px;overflow:hidden}
+.menus .mi{display:flex;align-items:center;padding:16px;border-bottom:1px solid var(--border);cursor:pointer;transition:.2s}
+.menus .mi:last-child{border-bottom:none}
+.menus .mi:active{background:var(--bg)}
+.menus .mi .mi{font-size:20px;margin-right:12px}
+.menus .mi .mt{flex:1;font-size:14px}
+.menus .mi .ma{color:var(--text3);font-size:18px}
+.ver{text-align:center;color:var(--text3);font-size:12px;padding:16px 0 40px}
+/* Toast */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:rgba(0,0,0,.8);color:white;padding:12px 24px;border-radius:8px;font-size:14px;z-index:1000;transition:transform .3s;pointer-events:none}
+.toast.show{transform:translate(-50%,-50%) scale(1)}
+/* Modal */
+.modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000}
+.modal.show{display:flex}
+.modal-c{background:var(--white);border-radius:16px;padding:24px;width:80%;max-width:320px;text-align:center}
+.modal-c h3{font-size:16px;margin-bottom:12px}
+.modal-c p{font-size:14px;color:var(--text2);margin-bottom:20px}
+.modal-b{display:flex;gap:12px}.modal-b .btn{flex:1}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- TabBar -->
+<nav class="tab-bar">
+  <div class="tab-item active" onclick="goPage('home')">
+    <span class="tab-icon">🏠</span>
+    <span class="tab-text">首页</span>
+  </div>
+  <div class="tab-item" onclick="goPage('list')">
+    <span class="tab-icon">📚</span>
+    <span class="tab-text">题库</span>
+  </div>
+  <div class="tab-item" onclick="goPage('add')">
+    <span class="tab-icon">➕</span>
+    <span class="tab-text">添加</span>
+  </div>
+  <div class="tab-item" onclick="goPage('practice')">
+    <span class="tab-icon">📝</span>
+    <span class="tab-text">练习</span>
+  </div>
+  <div class="tab-item" onclick="goPage('profile')">
+    <span class="tab-icon">👤</span>
+    <span class="tab-text">我的</span>
+  </div>
+</nav>
+
+<div class="pages" id="pages">
+
+<!-- ====== 首页 ====== -->
+<div id="page-home" class="page active">
+  <div class="header">
+    <h1>📚 错题宝</h1>
+    <p class="sub">错题收集 · AI解析 · 举一反三</p>
+  </div>
+  <div class="stats" id="home-stats"></div>
+  <div class="sec" id="home-review-sec">
+    <div class="sec-hdr">
+      <h2>📅 今日复习</h2>
+      <span class="badge" id="review-badge">0题</span>
+    </div>
+    <div id="review-list"></div>
+    <button class="btn btn-p btn-b" onclick="doReview()">开始复习</button>
+  </div>
+  <div class="sec">
+    <div class="sec-hdr"><h2>📊 学科分布</h2></div>
+    <div id="subject-chart"></div>
+  </div>
+  <div class="sec">
+    <div class="sec-hdr"><h2>⚡ 快捷操作</h2></div>
+    <div class="grid2">
+      <div class="action-item" onclick="goPage('add')">
+        <span class="aicon">📷</span>
+        <span class="atxt">添加错题</span>
+      </div>
+      <div class="action-item" onclick="goPage('practice')">
+        <span class="aicon">🎯</span>
+        <span class="atxt">开始练习</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 题库 ====== -->
+<div id="page-list" class="page">
+  <div class="page-hdr">
+    <h1>📚 题库</h1>
+    <div class="search-b">
+      <input type="text" id="search-inp" placeholder="🔍 搜索..." oninput="renderList()">
+    </div>
+  </div>
+  <div class="filters">
+    <div class="filter-g"><select id="f-subj" onchange="renderList()">
+      <option value="">学科</option>
+      <option value="math">数学</option><option value="chinese">语文</option><option value="english">英语</option>
+      <option value="physics">物理</option><option value="chemistry">化学</option><option value="biology">生物</option>
+      <option value="history">历史</option><option value="geography">地理</option><option value="politics">政治</option>
+    </select></div>
+    <div class="filter-g"><select id="f-diff" onchange="renderList()">
+      <option value="">难度</option><option value="easy">简单</option><option value="medium">中等</option><option value="hard">困难</option>
+    </select></div>
+    <div class="filter-g"><select id="f-stat" onchange="renderList()">
+      <option value="">状态</option><option value="new">新题</option><option value="learning">学习中</option><option value="mastered">已掌握</option>
+    </select></div>
+  </div>
+  <div class="qlist" id="qlist"></div>
+</div>
+
+<!-- ====== 添加错题 ====== -->
+<div id="page-add" class="page">
+  <div class="page-hdr"><h1>➕ 添加错题</h1></div>
+  <div class="form">
+    <div class="mode-sel">
+      <div class="mode-btn active" onclick="setMode('manual')">📝 手动输入</div>
+      <div class="mode-btn" onclick="setMode('ocr')">📷 拍照识别</div>
+    </div>
+    <div id="ocr-area" class="hidden">
+      <div class="upload-a" onclick="document.getElementById('img-file').click()">
+        <span class="uicon">📷</span>
+        <p>点击选择图片</p>
+      </div>
+      <input type="file" id="img-file" accept="image/*" style="display:none" onchange="handleImg(this)">
+      <div id="ocr-result" class="ai-r" style="display:block"></div>
+    </div>
+    <div class="fg">
+      <label>题目内容 *</label>
+      <textarea id="q-content" placeholder="请输入题目内容..." rows="4"></textarea>
+    </div>
+    <div class="fg">
+      <label>学科 *</label>
+      <select id="q-subj">
+        <option value="">请选择</option>
+        <option value="math">数学</option><option value="chinese">语文</option><option value="english">英语</option>
+        <option value="physics">物理</option><option value="chemistry">化学</option><option value="biology">生物</option>
+        <option value="history">历史</option><option value="geography">地理</option><option value="politics">政治</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>难度</label>
+      <div class="diff-sel">
+        <input type="radio" name="diff" id="d-easy" value="easy"><label for="d-easy">🟢 简单</label>
+        <input type="radio" name="diff" id="d-mid" value="medium" checked><label for="d-mid">🟡 中等</label>
+        <input type="radio" name="diff" id="d-hard" value="hard"><label for="d-hard">🔴 困难</label>
+      </div>
+    </div>
+    <div class="fg"><label>正确答案</label><input type="text" id="q-ans" placeholder="请输入正确答案"></div>
+    <div class="fg"><label>题目解析</label><textarea id="q-ana" placeholder="请输入解析..." rows="3"></textarea></div>
+    <div class="fg"><label>知识点标签</label><input type="text" id="q-tags" placeholder="逗号分隔，如：函数,求导"></div>
+    <div class="fg"><label>题目来源</label><input type="text" id="q-src" placeholder="如：期中考试第3题"></div>
+    <button class="btn btn-ai" onclick="aiAnalyze()">🤖 AI 智能解析</button>
+    <div id="ai-result" class="ai-r"></div>
+    <button class="btn btn-p btn-b" style="margin-top:16px" onclick="saveQ()">💾 保存错题</button>
+  </div>
+</div>
+
+<!-- ====== 练习 ====== -->
+<div id="page-practice" class="page">
+  <div class="page-hdr"><h1>📝 练习</h1></div>
+  <div class="modes">
+    <div class="mode-c active" onclick="setModeP('smart')">
+      <span class="micon">🧠</span><h3>智能复习</h3><p>基于遗忘曲线</p>
+    </div>
+    <div class="mode-c" onclick="setModeP('random')">
+      <span class="micon">🎲</span><h3>随机练习</h3><p>随机抽取题目</p>
+    </div>
+    <div class="mode-c" onclick="setModeP('subject')">
+      <span class="micon">📖</span><h3>按学科</h3><p>选择学科练习</p>
+    </div>
+    <div class="mode-c" onclick="setModeP('weak')">
+      <span class="micon">💪</span><h3>攻克薄弱</h3><p>优先错误率高的</p>
+    </div>
+  </div>
+  <div id="subj-select" class="hidden" style="padding:0 16px;margin-bottom:16px">
+    <select id="p-subj" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--white)">
+      <option value="">选择学科</option>
+      <option value="math">数学</option><option value="chinese">语文</option><option value="english">英语</option>
+      <option value="physics">物理</option><option value="chemistry">化学</option><option value="biology">生物</option>
+      <option value="history">历史</option><option value="geography">地理</option><option value="politics">政治</option>
+    </select>
+  </div>
+  <div class="practice-s">
+    <div class="stepper">
+      <label>题目数量</label>
+      <span class="step-btn" onclick="chgQty(-1)">−</span>
+      <input type="number" id="p-count" value="5" min="1" max="20" readonly>
+      <span class="step-btn" onclick="chgQty(1)">+</span>
+    </div>
+  </div>
+  <div style="padding:0 16px">
+    <button class="btn btn-p btn-b" onclick="startPrac()">开始练习</button>
+  </div>
+  <div class="practice-r" id="practice-r"></div>
+</div>
+
+<!-- ====== 详情 ====== -->
+<div id="page-detail" class="page">
+  <div class="page-hdr">
+    <button class="back-btn" onclick="goBack()">← 返回</button>
+    <h1>错题详情</h1>
+    <div class="header-acts">
+      <button onclick="editQ()">✏️</button>
+      <button onclick="delQ()">🗑️</button>
+    </div>
+  </div>
+  <div class="detail">
+    <div class="dsec">
+      <div class="q-meta" id="d-meta"></div>
+      <div class="q-text" id="d-content"></div>
+    </div>
+    <div class="dsec">
+      <h3>📝 正确答案</h3>
+      <div class="ans-box" id="d-answer"></div>
+    </div>
+    <div class="dsec">
+      <h3>💡 详细解析</h3>
+      <div class="ans-box" id="d-analysis"></div>
+    </div>
+    <div class="dsec">
+      <div class="sec-hdr"><h3>🔄 举一反三</h3><button class="btn btn-sm" onclick="genSimilar()">🤖 AI生成</button></div>
+      <div class="similar" id="d-similar"><p style="color:var(--text3);padding:8px 0">点击上方按钮生成相似题</p></div>
+    </div>
+    <div class="dsec">
+      <h3>📊 学习记录</h3>
+      <div class="st-row" id="d-stats"></div>
+    </div>
+    <div class="act-btns">
+      <button class="btn btn-s" onclick="markDone()">✓ 标记已掌握</button>
+      <button class="btn btn-p" onclick="practiceOne()">练习此题</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 个人中心 ====== -->
+<div id="page-profile" class="page">
+  <div class="page-hdr"><h1>👤 个人中心</h1></div>
+  <div class="user-sec">
+    <div class="user-ava">👤</div>
+    <div class="user-info">
+      <h2>学习者</h2>
+      <p class="uid">ID: <span id="uid"></span></p>
+    </div>
+  </div>
+  <div class="sec">
+    <h2 style="margin-bottom:12px">📊 学习统计</h2>
+    <div class="st-grid">
+      <div class="st-box"><div class="num" id="p-total">0</div><div class="desc">错题总数</div></div>
+      <div class="st-box"><div class="num" id="p-review">0</div><div class="desc">复习次数</div></div>
+      <div class="st-box"><div class="num" id="p-mastered">0</div><div class="desc">已掌握</div></div>
+      <div class="st-box"><div class="num" id="p-streak">0</div><div class="desc">连续天数</div></div>
+    </div>
+  </div>
+  <div class="sec">
+    <h2 style="margin-bottom:12px">📈 本周学习</h2>
+    <div class="week-ch" id="week-chart"></div>
+  </div>
+  <div class="menus">
+    <div class="mi" onclick="expData()"><span class="mi" style="font-size:20px;margin-right:12px">📤</span><span class="mt">导出数据</span><span class="ma">›</span></div>
+    <div class="mi" onclick="impData()"><span class="mi" style="font-size:20px;margin-right:12px">📥</span><span class="mt">导入数据</span><span class="ma">›</span></div>
+    <div class="mi" onclick="clrData()"><span class="mi" style="font-size:20px;margin-right:12px">🗑️</span><span class="mt">清空数据</span><span class="ma">›</span></div>
+    <div class="mi" onclick="showHelp()"><span class="mi" style="font-size:20px;margin-right:12px">❓</span><span class="mt">帮助与反馈</span><span class="ma">›</span></div>
+    <div class="mi" onclick="showAbout()"><span class="mi" style="font-size:20px;margin-right:12px">ℹ️</span><span class="mt">关于错题宝</span><span class="ma">›</span></div>
+  </div>
+  <div class="ver">错题宝 v1.0.0</div>
+</div>
+
+</div><!-- pages end -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+  <div class="modal-c">
+    <h3 id="m-title">确认</h3>
+    <p id="m-msg"></p>
+    <div class="modal-b">
+      <button class="btn btn-s" onclick="hideModal()">取消</button>
+      <button class="btn btn-p" onclick="doModal()">确认</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ==============================================
+// 数据核心
+// ==============================================
+const K = 'wrong_q_data';
+const SUBJ = {math:'数学',chinese:'语文',english:'英语',physics:'物理',chemistry:'化学',biology:'生物',history:'历史',geography:'地理',politics:'政治'};
+const DIFF = {easy:'简单',medium:'中等',hard:'困难'};
+const STAT = {new:'新题',learning:'学习中',mastered:'已掌握'};
+
+function load(){try{return JSON.parse(localStorage.getItem(K))||def()}catch(e){return def()}}
+function save(d){try{localStorage.setItem(K,JSON.stringify(d));return true}catch(e){return false}}
+function def(){return {questions:[],history:[],streak:1,lastDate:new Date().toDateString()}}
+
+function uid(){return Math.random().toString(36).substr(2,8).toUpperCase()}
+function gid(){return Date.now().toString(36)+Math.random().toString(36).substr(2)}
+function $(id){return document.getElementById(id)}
+function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2000)}
+function shuffle(a){var r=[...a];for(var i=r.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]]}return r}
+
+// ==============================================
+// 页面切换
+// ==============================================
+function goPage(p){
+  document.querySelectorAll('.page').forEach(function(el){el.classList.remove('active')});
+  var el=$(('page-'+p));if(el)el.classList.add('active');
+  document.querySelectorAll('.tab-item').forEach(function(t){t.classList.toggle('active',t.getAttribute('onclick').indexOf("'"+p+"'")>-1)});
+  if(p==='home')renderHome();
+  else if(p==='list')renderList();
+  else if(p==='profile')renderProfile();
+}
+
+var curQ=null;
+function goBack(){curQ=null;goPage('list')}
+
+// ==============================================
+// 首页
+// ==============================================
+function renderHome(){
+  var d=load(),qs=d.questions;
+  var total=qs.length,mster=qs.filter(function(q){return q.status==='mastered'}).length;
+  var toRev=qs.filter(function(q){return !q.nextReviewTime||new Date(q.nextReviewTime)<=new Date()}).length;
+  updStreak();var str=load().streak;
+  $('home-stats').innerHTML=
+    '<div class="stat-card"><div class="val">'+total+'</div><div class="lbl">错题总数</div></div>'+
+    '<div class="stat-card"><div class="val">'+toRev+'</div><div class="lbl">待复习</div></div>'+
+    '<div class="stat-card"><div class="val">'+mster+'</div><div class="lbl">已掌握</div></div>'+
+    '<div class="stat-card"><div class="val">'+str+'</div><div class="lbl">连续天数</div></div>';
+  $('review-badge').textContent=toRev+'题';
+  var rl=$('review-list');
+  var rqs=qs.filter(function(q){return !q.nextReviewTime||new Date(q.nextReviewTime)<=new Date()}).slice(0,3);
+  if(rqs.length===0){
+    rl.innerHTML='<div class="empty"><span class="eicon">✨</span><p>今日复习计划已完成</p></div>';
+    $('home-review-sec').querySelector('.btn').textContent='随机练习';
+  } else {
+    rl.innerHTML=rqs.map(function(q){return '<div class="review-item" onclick="viewQ(\''+q.id+'\')"><span class="subj">'+(SUBJ[q.subject]||q.subject)+'</span><span class="txt">'+q.content.substring(0,30)+'...</span><span class="arr">›</span></div>'}).join('');
+    $('home-review-sec').querySelector('.btn').textContent='开始复习 ('+toRev+'题)';
+  }
+  var sc={};qs.forEach(function(q){sc[q.subject]=(sc[q.subject]||0)+1});
+  var c=$('subject-chart');
+  if(Object.keys(sc).length===0){c.innerHTML='<div class="empty"><p>暂无数据</p></div>';return}
+  c.innerHTML=Object.entries(sc).sort(function(a,b){return b[1]-a[1]}).map(function(e){return '<div style="display:flex;align-items:center;padding:8px 0"><span style="width:60px;font-size:12px;color:var(--text2)">'+(SUBJ[e[0]]||e[0])+'</span><div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin:0 8px"><div style="height:100%;background:linear-gradient(90deg,var(--primary),var(--primary-light));border-radius:4px;transition:width .5s;width:'+(e[1]/qs.length*100)+'%"></div></div><span style="width:30px;font-size:12px;color:var(--text2);text-align:right">'+e[1]+'</span></div>'}).join('');
+}
+
+// 连续天数
+function updStreak(){
+  var d=load(),today=new Date().toDateString();
+  if(d.lastDate!==today){
+    var y=new Date();y.setDate(y.getDate()-1);
+    if(d.lastDate===y.toDateString()){d.streak++}else if(d.lastDate!==today){d.streak=1}
+    d.lastDate=today;save(d);
+  }
+}
+
+// ==============================================
+// 题库列表
+// ==============================================
+function renderList(){
+  var d=load(),qs=d.questions;
+  var subj=$('f-subj').value,diff=$('f-diff').value,stat=$('f-stat').value,search=$('search-inp').value.toLowerCase();
+  var f=qs.filter(function(q){
+    if(subj&&q.subject!==subj)return false;
+    if(diff&&q.difficulty!==diff)return false;
+    if(stat&&q.status!==stat)return false;
+    if(search&&!q.content.toLowerCase().includes(search))return false;
+    return true;
+  });
+  f.sort(function(a,b){return new Date(b.createTime)-new Date(a.createTime)});
+  var el=$('qlist');
+  if(f.length===0){
+    el.innerHTML='<div class="empty"><span class="eicon">📝</span><p>'+(qs.length===0?'还没有错题':'没有匹配的题目')+'</p>'+(qs.length===0?'<button class="btn btn-p" onclick="goPage(\'add\')">添加第一道错题</button>':'')+'</div>';
+    return;
+  }
+  el.innerHTML=f.map(function(q){
+    return '<div class="qcard" onclick="viewQ(\''+q.id+'\')"><div class="tags">'+
+      '<span class="tag '+q.subject+'">'+(SUBJ[q.subject]||q.subject)+'</span>'+
+      '<span class="tag '+q.difficulty+'">'+(DIFF[q.difficulty]||q.difficulty)+'</span>'+
+      '<span class="tag '+(q.status||'new')+'">'+(STAT[q.status||'new']||'新题')+'</span></div>'+
+      '<div class="q">'+q.content+'</div>'+
+      '<div class="meta"><span>'+fmtDate(q.createTime)+'</span><span>复习 '+(q.reviewCount||0)+' 次</span></div></div>'
+  }).join('');
+}
+
+// ==============================================
+// 添加错题
+// ==============================================
+function setMode(m){
+  document.querySelectorAll('.mode-btn').forEach(function(b){b.classList.toggle('active',b.textContent.indexOf(m==='manual'?'手动':m==='ocr'?'拍照':'')>-1)});
+  $('ocr-area').classList.toggle('hidden',m!=='ocr');
+}
+
+function handleImg(inp){
+  var f=inp.files[0];if(!f)return;
+  var r=new FileReader();r.onload=function(e){
+    $('upload-a').innerHTML='<img src="'+e.target.result+'" style="max-width:100%;max-height:200px;border-radius:8px"><p style="margin-top:8px">✅ 图片已选择</p>';
+    toast('正在识别...');
+    setTimeout(function(){
+      var ts=['已知函数 f(x)=x²-2x+1，求 f\'(x) 的值','阅读下面的文言文，回答问题...','计算方程：2x+5=15','翻译：The quick brown fox...'];
+      $('ocr-result').innerHTML='<div style="margin-top:12px"><h3 style="font-size:14px;margin-bottom:8px">📷 识别结果</h3><p style="font-size:13px;padding:8px;background:var(--white);border-radius:6px">'+ts[Math.floor(Math.random()*ts.length)]+'</p><button class="btn btn-s btn-b" style="margin-top:8px" onclick="useOcr()">使用此结果</button></div>';
+      toast('识别完成');
+    },1500);
+  };r.readAsDataURL(f);
+}
+
+function useOcr(){
+  var t=$('ocr-result').querySelector('p');if(!t)return;
+  $('q-content').value=t.textContent;toast('已填入题目内容')
+}
+
+function aiAnalyze(){
+  var c=$('q-content').value;
+  if(!c){toast('请先输入题目内容');return}
+  var b=event.target;b.disabled=true;b.innerHTML='🤖 分析中...';
+  toast('AI 分析中...');
+  setTimeout(function(){
+    $('ai-result').style.display='block';
+    $('ai-result').innerHTML='<h3>🤖 AI 解析结果</h3><p><strong>答案：</strong>答案是 B</p><p><strong>解析：</strong>这道题考查的是核心概念的理解...</p><p><strong>知识点：</strong>函数求导、导数公式</p><p><strong>建议：</strong>建议复习导数的基本公式</p>';
+    $('q-ans').value='答案是 B';
+    $('q-ana').value='这道题考查的是核心概念的理解...';
+    $('q-tags').value='函数,求导,导数公式';
+    b.disabled=false;b.innerHTML='🤖 AI 智能解析';
+    toast('分析完成');
+  },2000);
+}
+
+function saveQ(){
+  var c=$('q-content').value.trim(),s=$('q-subj').value;
+  if(!c){toast('请输入题目内容');return}
+  if(!s){toast('请选择学科');return}
+  var d=document.querySelector('input[name="diff"]:checked');
+  var q={id:gid(),content:c,subject:s,difficulty:d?d.value:'medium',
+    answer:$('q-ans').value.trim(),analysis:$('q-ana').value.trim(),
+    tags:$('q-tags').value.split(',').map(function(t){return t.trim()}).filter(function(t){return t}),
+    source:$('q-src').value.trim(),status:'new',reviewCount:0,correctCount:0,
+    createTime:new Date().toISOString(),nextReviewTime:new Date().toISOString()};
+  var data=load();data.questions.unshift(q);save(data);
+  toast('✅ 保存成功');
+  $('q-content').value='';$('q-subj').value='';$('q-ans').value='';$('q-ana').value='';$('q-tags').value='';$('q-src').value='';
+  $('ai-result').style.display='none';$('ai-result').innerHTML='';
+  goPage('list');
+}
+
+// ==============================================
+// 练习
+// ==============================================
+var pm='smart';
+function setModeP(m){
+  pm=m;
+  document.querySelectorAll('.mode-c').forEach(function(c){c.classList.toggle('active',c.getAttribute('onclick').indexOf("'"+m+"'")>-1)});
+  $('subj-select').classList.toggle('hidden',m!=='subject');
+}
+
+function chgQty(d){var i=$('p-count'),v=parseInt(i.value)+d;i.value=Math.max(1,Math.min(20,v))}
+function doReview(){pm='smart';goPage('practice');setTimeout(function(){startPrac()},200)}
+
+function startPrac(){
+  if(pm==='subject'&&!$('p-subj').value){toast('请选择学科');return}
+  var d=load(),qs=[...d.questions],cnt=parseInt($('p-count').value||5);
+  if(pm==='smart')qs=qs.filter(function(q){return !q.nextReviewTime||new Date(q.nextReviewTime)<=new Date()||q.status!=='mastered'});
+  else if(pm==='random')qs=shuffle(qs);
+  else if(pm==='subject'){qs=qs.filter(function(q){return q.subject===$('p-subj').value});qs=shuffle(qs)}
+  else if(pm==='weak')qs.sort(function(a,b){var ra=a.reviewCount?a.correctCount/a.reviewCount:1;var rb=b.reviewCount?b.correctCount/b.reviewCount:1;return ra-rb});
+  if(qs.length===0){toast('没有可练习的题目');return}
+  qs=qs.slice(0,cnt);
+  showP(qs,0);
+}
+
+var pracQs=[];
+function showP(qs,idx){
+  pracQs=qs;
+  if(idx>=qs.length){showR(qs);return}
+  var q=qs[idx],r=$('practice-r');r.style.display='block';
+  r.innerHTML='<div class="progress"><span>'+ (idx+1)+' / '+qs.length+'</span><span style="color:var(--text2);font-size:13px">模式：'+(pm==='smart'?'智能':pm==='random'?'随机':pm==='subject'?SUBJ[$('p-subj').value]||'学科':'攻克')+'</span></div>'+
+    '<div class="q-meta"><span class="tag '+q.subject+'">'+(SUBJ[q.subject]||q.subject)+'</span><span class="tag '+q.difficulty+'">'+(DIFF[q.difficulty]||q.difficulty)+'</span></div>'+
+    '<div class="q-text">'+q.content+'</div>'+
+    '<div class="ans-btns"><button class="btn btn-s" onclick="ansP('+idx+',true)">✓ 答对了</button><button class="btn btn-s" onclick="ansP('+idx+',false)">✗ 答错了</button></div>'+
+    '<div class="reveal" id="reveal-'+idx+'"></div>';
+  r.scrollIntoView({behavior:'smooth'});
+}
+
+function ansP(idx,corr){
+  var q=pracQs[idx];
+  var d=load(),oq=d.questions.find(function(x){return x.id===q.id});
+  if(oq){
+    oq.reviewCount=(oq.reviewCount||0)+1;
+    if(corr)oq.correctCount=(oq.correctCount||0)+1;
+    var is=[1,3,7,15,30],ni=oq.reviewCount?Math.min(oq.reviewCount-1,is.length-1):0;
+    var nd=corr?is[ni]:1;var nt=new Date();nt.setDate(nt.getDate()+nd);oq.nextReviewTime=nt.toISOString();
+    if(oq.correctCount&&oq.reviewCount){var rt=oq.correctCount/oq.reviewCount;oq.status=rt>=0.8?'mastered':rt>=0.3?'learning':'new'}
+    d.history.push({questionId:q.id,correct:corr,time:new Date().toISOString()});save(d);
+  }
+  var r=$('reveal-'+idx);r.style.display='block';
+  r.innerHTML='<h4>✅ 正确答案</h4><p>'+(q.answer||'暂无答案')+'</p>'+(q.analysis?'<h4>💡 解析</h4><p>'+q.analysis+'</p>':'')+
+    '<button class="btn btn-p" style="margin-top:8px" onclick="showP(pracQs,'+(idx+1)+')">下一题 →</button>';
+  $('practice-r').querySelector('.ans-btns').style.display='none';
+}
+
+function showR(qs){
+  var r=$('practice-r');r.style.display='block';
+  var d=load(),total=qs.length,corr=0;
+  qs.forEach(function(q){
+    var oq=d.questions.find(function(x){return x.id===q.id});
+    if(oq&&oq.correctCount){corr=Math.min(oq.correctCount,oq.reviewCount)}
+  });
+  var acc=total>0?Math.round(corr/total*100):0;
+  r.innerHTML='<div class="result-h"><span class="ricon">'+(acc>=80?'🎉':acc>=50?'💪':'📚')+'</span><h3>'+(acc>=80?'太棒了！':acc>=50?'还不错！':'继续加油！')+'</h3></div>'+
+    '<div class="result-st"><div class="rs"><div class="v">'+total+'</div><div class="l">总题数</div></div>'+
+    '<div class="rs"><div class="v">'+corr+'</div><div class="l">答对</div></div>'+
+    '<div class="rs"><div class="v">'+acc+'%</div><div class="l">正确率</div></div></div>'+
+    '<button class="btn btn-p btn-b" onclick="goPage(\'home\')">返回首页</button>';
+}
+
+// ==============================================
+// 详情
+// ==============================================
+function viewQ(id){
+  var d=load(),q=d.questions.find(function(x){return x.id===id});
+  if(!q){toast('题目不存在');return}
+  curQ=q;
+  $('d-meta').innerHTML='<span class="tag '+q.subject+'">'+(SUBJ[q.subject]||q.subject)+'</span><span class="tag '+q.difficulty+'">'+(DIFF[q.difficulty]||q.difficulty)+'</span><span class="tag '+(q.status||'new')+'">'+(STAT[q.status||'new']||'新题')+'</span>';
+  $('d-content').textContent=q.content;
+  $('d-answer').textContent=q.answer||'暂无答案';
+  $('d-analysis').textContent=q.analysis||'暂无解析';
+  var mr=q.reviewCount>0?Math.round(q.correctCount/q.reviewCount*100):0;
+  $('d-stats').innerHTML='<div class="si"><span class="lbl">复习次数</span><span class="val">'+(q.reviewCount||0)+'</span></div><div class="si"><span class="lbl">答对次数</span><span class="val">'+(q.correctCount||0)+'</span></div><div class="si"><span class="lbl">掌握率</span><span class="val">'+mr+'%</span></div>';
+  $('d-similar').innerHTML='<p style="color:var(--text3);padding:8px 0">点击上方按钮生成相似题</p>';
+  goPage('detail');
+}
+
+function genSimilar(){
+  if(!curQ){return}
+  toast('正在生成...');
+  setTimeout(function(){
+    $('d-similar').innerHTML='';
+    for(var i=0;i<3;i++){
+      $('d-similar').innerHTML+='<div class="s-item"><h4>相似题 '+(i+1)+'</h4><p>这是根据原题知识点生成的相似练习题...</p><p class="answer">正确答案：这是 AI 生成的答案 '+(i+1)+'</p><p style="color:var(--text2);font-size:12px">解析：解题思路与原题类似...</p></div>';
+    }
+    toast('生成完成');
+  },1500);
+}
+
+function markDone(){
+  if(!curQ){return}
+  var d=load(),q=d.questions.find(function(x){return x.id===curQ.id});
+  if(q){q.status='mastered';save(d);$('d-meta').querySelector('.tag.mastered').textContent='已掌握';toast('已标记为已掌握')}
+}
+
+function practiceOne(){
+  if(!curQ){return}
+  goPage('practice');setTimeout(function(){
+    pm='smart';$('p-count').value=1;
+    showP([curQ],0);
+  },200)
+}
+
+function editQ(){toast('编辑功能开发中')}
+function delQ(){
+  if(!curQ){return}
+  showModal('确认删除','确定要删除这道错题吗？',function(){
+    var d=load(),i=d.questions.findIndex(function(x){return x.id===curQ.id});
+    if(i>-1){d.questions.splice(i,1);save(d);toast('已删除');goBack()}
+  })
+}
+
+// ==============================================
+// 个人中心
+// ==============================================
+function renderProfile(){
+  var d=load(),qs=d.questions;
+  $('p-total').textContent=qs.length;
+  $('p-review').textContent=d.history.length;
+  $('p-mastered').textContent=qs.filter(function(q){return q.status==='mastered'}).length;
+  $('p-streak').textContent=d.streak||1;
+  $('uid').textContent=uid();
+  // 周图表
+  var days=['日','一','二','三','四','五','六'],today=new Date(),data=[];
+  for(var i=6;i>=0;i--){
+    var dt=new Date(today);dt.setDate(dt.getDate()-i);dt.setHours(0,0,0,0);
+    var nxt=new Date(dt);nxt.setDate(nxt.getDate()+1);
+    var cnt=d.history.filter(function(h){var ht=new Date(h.time);return ht>=dt&&ht<nxt}).length;
+    data.push({day:days[dt.getDay()],count:cnt});
+  }
+  var max=Math.max(...data.map(function(d){return d.count}),1);
+  $('week-chart').innerHTML=data.map(function(d){
+    return '<div class="wb"><div class="wf" style="height:'+(d.count/max*60)+'px"></div><span class="wl">'+d.day+'</span></div>'
+  }).join('');
+}
+
+function expData(){
+  var d=load(),blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='错题宝数据_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  URL.revokeObjectURL(url);toast('导出成功');
+}
+
+function impData(){
+  var inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=function(e){
+    var f=e.target.files[0];if(!f)return;
+    var r=new FileReader();r.onload=function(e){
+      try{var d=JSON.parse(e.target.result);if(d.questions&&Array.isArray(d.questions)){save(d);toast('导入成功');renderProfile()}else{toast('文件格式错误')}}catch(err){toast('导入失败')}
+    };r.readAsText(f);
+  };inp.click();
+}
+
+function clrData(){
+  showModal('确认清空','确定要清空所有数据吗？此操作不可撤销。',function(){save(def());toast('已清空');renderProfile();renderHome()})
+}
+
+function showHelp(){toast('如有问题请联系开发者')}
+function showAbout(){alert('错题宝 v1.0.0\n\n帮助学生高效管理错题\n支持 AI解析、举一反三')}
+
+// ==============================================
+// Modal
+// ==============================================
+var modalCB=null;
+function showModal(title,msg,cb){
+  $('m-title').textContent=title;$('m-msg').textContent=msg;
+  $('modal').classList.add('show');modalCB=cb;
+}
+function hideModal(){$('modal').classList.remove('show');modalCB=null}
+function doModal(){hideModal();if(modalCB)modalCB()}
+
+// ==============================================
+// 工具
+// ==============================================
+function fmtDate(s){
+  var d=new Date(s);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
+}
+
+// ==============================================
+// 初始化 - 添加示例数据
+// ==============================================
+(function(){
+  var d=load();
+  if(d.questions.length===0){
+    d.questions=[
+      {id:gid(),content:'已知函数 f(x)=x²-2x+1，求 f\'(x) 的值。',subject:'math',difficulty:'easy',answer:'f\'(x)=2x-2',analysis:'利用导数公式：(x^n)\'=nx^(n-1)',tags:['函数','求导'],status:'learning',reviewCount:2,correctCount:1,createTime:new Date(Date.now()-864e5*3).toISOString(),nextReviewTime:new Date(Date.now()+864e5).toISOString()},
+      {id:gid(),content:'子曰："学而时习之，不亦说乎？"这句话的含义是什么？',subject:'chinese',difficulty:'medium',answer:'学了知识后经常复习，不是很愉快吗？',analysis:'这是《论语》名句，"时"意为按时，"说"通"悦"',tags:['文言文','论语'],status:'new',reviewCount:0,correctCount:0,createTime:new Date(Date.now()-864e5).toISOString(),nextReviewTime:new Date().toISOString()},
+      {id:gid(),content:'翻译：The quick brown fox jumps over the lazy dog.',subject:'english',difficulty:'easy',answer:'一只快速棕色狐狸跳过那只懒狗。',analysis:'经典全字母句，注意形容词顺序',tags:['翻译','词汇'],status:'mastered',reviewCount:5,correctCount:5,createTime:new Date(Date.now()-864e5*7).toISOString(),nextReviewTime:new Date(Date.now()+864e5*15).toISOString()},
+      {id:gid(),content:'一个物体从静止做匀加速直线运动，a=2m/s²，求5秒后的速度和位移。',subject:'physics',difficulty:'medium',answer:'v=10m/s，s=25m',analysis:'v=at=2×5=10m/s，s=½at²=½×2×25=25m',tags:['运动学','匀加速'],status:'learning',reviewCount:1,correctCount:0,createTime:new Date(Date.now()-864e5*2).toISOString(),nextReviewTime:new Date().toISOString()}
+    ];
+    d.streak=3;d.lastDate=new Date().toDateString();
+    d.questions.forEach(function(q){for(var i=0;i<(q.reviewCount||0);i++)d.history.push({questionId:q.id,correct:i<(q.correctCount||0),time:new Date(Date.now()-864e5*(i+1)).toISOString()})});
+    save(d);
+  }
+  renderHome();
+})();
+</script>
+</body>
+</html>
