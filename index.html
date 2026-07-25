@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>错题宝 - 错题收集整理及举一反三</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--primary:#4F46E5;--primary-light:#818CF8;--success:#10B981;--warning:#F59E0B;--danger:#EF4444;--bg:#F5F5F5;--white:#FFFFFF;--text:#1F2937;--text2:#6B7280;--text3:#9CA3AF;--border:#E5E7EB;--shadow:0 2px 8px rgba(0,0,0,.1);--safe:env(safe-area-inset-bottom,0px)}
@@ -257,17 +258,18 @@ html,body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px
     </div>
     <div id="ocr-area" class="hidden">
       <div id="upload-area">
-        <label for="img-file" class="upload-a" style="display:block">
+        <label for="img-file" class="upload-a" style="display:block;cursor:pointer">
           <span class="uicon">📷</span>
-          <p>📸 拍照上传</p>
-          <p style="font-size:11px;color:var(--text3);margin-top:4px">iPad/Safari可直接拍照</p>
+          <p>点击上传已批改的试卷照片</p>
+          <p style="font-size:11px;color:var(--text3);margin-top:4px">支持拍照或从相册选择</p>
         </label>
         <input type="file" id="img-file" accept="image/*" capture="environment" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none" onchange="handleImg(this)">
         <div style="display:flex;gap:8px;margin-top:8px">
-          <label for="img-gallery" class="btn btn-s" style="flex:1;text-align:center;pointer-events:auto">🖼️ 从相册选择</label>
-          <label for="img-file" class="btn btn-s" style="flex:1;text-align:center;pointer-events:auto">📷 拍照</label>
+          <label for="img-gallery" class="btn btn-s" style="flex:1;text-align:center;cursor:pointer">🖼️ 相册选择</label>
+          <label for="img-file" class="btn btn-s" style="flex:1;text-align:center;cursor:pointer">📷 拍照</label>
         </div>
         <input type="file" id="img-gallery" accept="image/*" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none" onchange="handleImg(this)">
+        <p style="font-size:11px;color:var(--text3);text-align:center;margin-top:6px">💡 请上传清晰的已批改试卷照片</p>
       </div>
     </div>
     <div class="fg">
@@ -544,35 +546,70 @@ function handleImg(inp){
   var f=inp.files[0];if(!f)return;
   var r=new FileReader();r.onload=function(e){
     var img=e.target.result;
-    $('upload-area').innerHTML='<img src="'+img+'" style="max-width:100%;max-height:280px;border-radius:8px;display:block;margin:0 auto 8px">'+
-      '<p style="text-align:center;color:var(--text2);font-size:12px;margin:4px 0">📷 图片已上传，OCR识别中...</p>'+
-      '<div style="padding:12px;background:var(--bg);border-radius:8px;margin-top:8px">'+
-      '<div style="display:flex;align-items:center;gap:8px">'+
-      '<div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite"></div>'+
-      '<span style="font-size:13px">正在识别文字...</span></div>'+
-      '<div style="height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden">'+
-      '<div id="ocr-bar" style="height:100%;width:0%;background:var(--primary);transition:width 2s"></div></div></div>';
+    var statusEl='<div id="ocr-status" style="padding:16px;background:var(--bg);border-radius:8px;margin-top:8px">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
+      '<div id="ocr-spinner" style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0"></div>'+
+      '<span id="ocr-status-text" style="font-size:13px">正在加载OCR引擎...</span></div>'+
+      '<div id="ocr-msg" style="font-size:12px;color:var(--text2);margin-bottom:6px">首次使用需要下载语言包，请稍候</div>'+
+      '<div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">'+
+      '<div id="ocr-bar" style="height:100%;width:0%;background:var(--primary);transition:width 0.3s;border-radius:2px"></div></div></div>';
+    $('upload-area').innerHTML='<img src="'+img+'" style="max-width:100%;max-height:280px;border-radius:8px;display:block;margin:0 auto 8px">'+statusEl;
     var bar=document.getElementById('ocr-bar');
-    setTimeout(function(){if(bar)bar.style.width='60%'},200);
-    setTimeout(function(){
-      var ts=['已知函数 f(x)=x²-2x+1，求 f\'(x) 的值。','阅读下面的文言文，回答问题...','计算方程：2x+5=15。','翻译：The quick brown fox jumps over the lazy dog.'];
-      var txt=ts[Math.floor(Math.random()*ts.length)];
+    var statusText=document.getElementById('ocr-status-text');
+    var statusMsg=document.getElementById('ocr-msg');
+    var progress=0;
+    var progInterval=setInterval(function(){
+      progress=Math.min(progress+Math.random()*8,90);
+      if(bar)bar.style.width=progress+'%';
+    },300);
+    Tesseract.recognize(img,'chi_sim+eng',{
+      logger:function(m){
+        if(m.status==='recognizing text'){
+          var p=Math.round((m.progress||0)*100);
+          if(bar)bar.style.width=p+'%';
+          if(statusText)statusText.textContent='正在识别文字 ('+p+'%)';
+        } else if(m.status==='loading language traineddata'){
+          if(statusText)statusText.textContent='加载语言包: '+m.filename;
+          if(statusMsg)statusMsg.textContent='下载进度: '+Math.round((m.progress||0)*100)+'%';
+        } else if(m.status==='initializing api'){
+          if(statusText)statusText.textContent='初始化OCR引擎...';
+        }
+      }
+    }).then(function(result){
+      clearInterval(progInterval);
+      if(bar)bar.style.width='100%';
+      var txt=(result&&result.data&&result.data.text)||'';
+      var clean=txt.replace(/\s+/g,' ').trim();
+      setTimeout(function(){
+        if(!clean||clean.length<3){
+          $('upload-area').innerHTML='<img src="'+img+'" style="max-width:100%;max-height:200px;border-radius:8px;display:block;margin:0 auto 8px">'+
+            '<div style="margin-top:8px;padding:12px;background:var(--danger);color:white;border-radius:8px;text-align:center">❌ 未识别到文字，请尝试：\n1. 图片是否清晰\n2. 文字是否水平\n3. 手动输入题目</div>'+
+            '<div style="margin-top:8px;padding:12px;background:var(--bg);border-radius:8px">'+
+            '<p style="font-size:13px;font-weight:600;margin-bottom:8px">📝 手动输入题目：</p>'+
+            '<textarea id="ocr-txt" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;resize:none;height:90px;background:var(--white)" placeholder="请在此手动输入题目内容..."></textarea>'+
+            '<button class="btn btn-p btn-b" style="margin-top:8px" onclick="useOcr()">✅ 使用此题目</button></div>';
+          toast('未识别到文字');
+          return;
+        }
+        $('upload-area').innerHTML='<img src="'+img+'" style="max-width:100%;max-height:200px;border-radius:8px;display:block;margin:0 auto 8px">'+
+          '<div style="margin-top:8px;padding:12px;background:var(--bg);border-radius:8px">'+
+          '<p style="font-size:13px;font-weight:600;margin-bottom:8px">📷 OCR识别结果：</p>'+
+          '<textarea id="ocr-txt" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;resize:none;height:100px;background:var(--white)">'+clean+'</textarea>'+
+          '<button class="btn btn-p btn-b" style="margin-top:8px" onclick="useOcr()">✅ 使用此题目</button>'+
+          '<p style="font-size:11px;color:var(--text3);margin-top:8px">💡 如识别有误，可手动修改后再使用</p></div>';
+        toast('识别完成，共 '+clean.length+' 字');
+      },500);
+    }).catch(function(err){
+      clearInterval(progInterval);
       $('upload-area').innerHTML='<img src="'+img+'" style="max-width:100%;max-height:200px;border-radius:8px;display:block;margin:0 auto 8px">'+
+        '<div style="margin-top:8px;padding:12px;background:var(--danger);color:white;border-radius:8px;text-align:center">❌ OCR识别失败: '+err.message+'</div>'+
         '<div style="margin-top:8px;padding:12px;background:var(--bg);border-radius:8px">'+
-        '<p style="font-size:13px;font-weight:600;margin-bottom:8px">📷 OCR识别结果：</p>'+
-        '<textarea id="ocr-txt" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;resize:none;height:90px;background:var(--white)">'+txt+'</textarea>'+
-        '<button class="btn btn-p btn-b" style="margin-top:8px" onclick="useOcr()">✅ 使用此题目</button>'+
-        '<button class="btn btn-s btn-b" style="margin-top:4px" onclick="regenOcr()">🔄 重新识别</button>'+
-        '<p style="font-size:11px;color:var(--text3);margin-top:8px">💡 如识别有误，可手动修改后再使用</p></div>';
-      toast('识别完成');
-    },2200);
+        '<p style="font-size:13px;font-weight:600;margin-bottom:8px">📝 手动输入题目：</p>'+
+        '<textarea id="ocr-txt" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;resize:none;height:90px;background:var(--white)" placeholder="请手动输入题目内容..."></textarea>'+
+        '<button class="btn btn-p btn-b" style="margin-top:8px" onclick="useOcr()">✅ 使用此题目</button></div>';
+      toast('识别失败，请手动输入');
+    });
   };r.readAsDataURL(f);
-}
-function regenOcr(){
-  toast('重新识别中...');
-  var ts=['已知函数 f(x)=x²-2x+1，求 f\'(x) 的值。','阅读下面的文言文，回答问题...','计算方程：2x+5=15。','翻译：The quick brown fox jumps over the lazy dog.'];
-  var t=document.getElementById('ocr-txt');if(t)t.value=ts[Math.floor(Math.random()*ts.length)];
-  toast('重新识别完成');
 }
 function useOcr(){
   var t=document.getElementById('ocr-txt');if(!t||!t.value.trim()){toast('请先上传图片');return}
