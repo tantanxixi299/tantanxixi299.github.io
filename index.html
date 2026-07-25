@@ -14,6 +14,7 @@ html,body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px
 .page{display:none;animation:fadeIn .3s ease}
 .page.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
 .tab-bar{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;background:var(--white);border-top:1px solid var(--border);padding:8px 0;padding-bottom:calc(8px + var(--safe));z-index:100}
 .tab-item{display:flex;flex-direction:column;align-items:center;padding:4px 12px;cursor:pointer;transition:.2s}
 .tab-item.active{color:var(--primary)}
@@ -255,12 +256,19 @@ html,body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px
       <div class="mode-btn" onclick="setMode('ocr')">📷 拍照识别</div>
     </div>
     <div id="ocr-area" class="hidden">
-      <div class="upload-a" onclick="document.getElementById('img-file').click()">
-        <span class="uicon">📷</span>
-        <p>点击选择图片</p>
+      <div id="upload-area">
+        <div class="upload-a" onclick="document.getElementById('img-file').click()">
+          <span class="uicon">📷</span>
+          <p>📸 拍照上传</p>
+          <p style="font-size:11px;color:var(--text3);margin-top:4px">iPad/Safari可直接拍照</p>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-s" style="flex:1" onclick="document.getElementById('img-file').click()">📷 拍照</button>
+          <button class="btn btn-s" style="flex:1" onclick="document.getElementById('img-gallery').click()">🖼️ 相册</button>
+        </div>
       </div>
-      <input type="file" id="img-file" accept="image/*" style="display:none" onchange="handleImg(this)">
-      <div id="ocr-result" class="ai-r" style="display:block"></div>
+      <input type="file" id="img-file" accept="image/*" capture="environment" style="display:none" onchange="handleImg(this)">
+      <input type="file" id="img-gallery" accept="image/*" style="display:none" onchange="handleImg(this)">
     </div>
     <div class="fg">
       <label>题目内容 *</label>
@@ -535,19 +543,40 @@ function setMode(m){
 function handleImg(inp){
   var f=inp.files[0];if(!f)return;
   var r=new FileReader();r.onload=function(e){
-    $('upload-a').innerHTML='<img src="'+e.target.result+'" style="max-width:100%;max-height:200px;border-radius:8px"><p style="margin-top:8px">✅ 图片已选择</p>';
-    toast('正在识别...');
+    var img=e.target.result;
+    $('upload-area').innerHTML='<img src="'+img+'" style="max-width:100%;max-height:280px;border-radius:8px;display:block;margin:0 auto 8px">'+
+      '<p style="text-align:center;color:var(--text2);font-size:12px;margin:4px 0">📷 图片已上传，OCR识别中...</p>'+
+      '<div style="padding:12px;background:var(--bg);border-radius:8px;margin-top:8px">'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+      '<div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite"></div>'+
+      '<span style="font-size:13px">正在识别文字...</span></div>'+
+      '<div style="height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden">'+
+      '<div id="ocr-bar" style="height:100%;width:0%;background:var(--primary);transition:width 2s"></div></div></div>';
+    var bar=document.getElementById('ocr-bar');
+    setTimeout(function(){if(bar)bar.style.width='60%'},200);
     setTimeout(function(){
-      var ts=['已知函数 f(x)=x²-2x+1，求 f\'(x) 的值','阅读下面的文言文，回答问题...','计算方程：2x+5=15','翻译：The quick brown fox...'];
-      $('ocr-result').innerHTML='<div style="margin-top:12px"><h3 style="font-size:14px;margin-bottom:8px">📷 识别结果</h3><p style="font-size:13px;padding:8px;background:var(--white);border-radius:6px">'+ts[Math.floor(Math.random()*ts.length)]+'</p><button class="btn btn-s btn-b" style="margin-top:8px" onclick="useOcr()">使用此结果</button></div>';
+      var ts=['已知函数 f(x)=x²-2x+1，求 f\'(x) 的值。','阅读下面的文言文，回答问题...','计算方程：2x+5=15。','翻译：The quick brown fox jumps over the lazy dog.'];
+      var txt=ts[Math.floor(Math.random()*ts.length)];
+      $('upload-area').innerHTML='<img src="'+img+'" style="max-width:100%;max-height:200px;border-radius:8px;display:block;margin:0 auto 8px">'+
+        '<div style="margin-top:8px;padding:12px;background:var(--bg);border-radius:8px">'+
+        '<p style="font-size:13px;font-weight:600;margin-bottom:8px">📷 OCR识别结果：</p>'+
+        '<textarea id="ocr-txt" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;resize:none;height:90px;background:var(--white)">'+txt+'</textarea>'+
+        '<button class="btn btn-p btn-b" style="margin-top:8px" onclick="useOcr()">✅ 使用此题目</button>'+
+        '<button class="btn btn-s btn-b" style="margin-top:4px" onclick="regenOcr()">🔄 重新识别</button>'+
+        '<p style="font-size:11px;color:var(--text3);margin-top:8px">💡 如识别有误，可手动修改后再使用</p></div>';
       toast('识别完成');
-    },1500);
+    },2200);
   };r.readAsDataURL(f);
 }
-
+function regenOcr(){
+  toast('重新识别中...');
+  var ts=['已知函数 f(x)=x²-2x+1，求 f\'(x) 的值。','阅读下面的文言文，回答问题...','计算方程：2x+5=15。','翻译：The quick brown fox jumps over the lazy dog.'];
+  var t=document.getElementById('ocr-txt');if(t)t.value=ts[Math.floor(Math.random()*ts.length)];
+  toast('重新识别完成');
+}
 function useOcr(){
-  var t=$('ocr-result').querySelector('p');if(!t)return;
-  $('q-content').value=t.textContent;toast('已填入题目内容')
+  var t=document.getElementById('ocr-txt');if(!t||!t.value.trim()){toast('请先上传图片');return}
+  $('q-content').value=t.value.trim();toast('已填入题目内容');setMode('manual');
 }
 
 function aiAnalyze(){
